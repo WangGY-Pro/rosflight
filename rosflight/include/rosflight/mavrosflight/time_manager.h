@@ -37,39 +37,45 @@
 #ifndef MAVROSFLIGHT_TIME_MANAGER_H
 #define MAVROSFLIGHT_TIME_MANAGER_H
 
+#include <rosflight/mavrosflight/logger_interface.h>
 #include <rosflight/mavrosflight/mavlink_bridge.h>
 #include <rosflight/mavrosflight/mavlink_comm.h>
 #include <rosflight/mavrosflight/mavlink_listener_interface.h>
+#include <rosflight/mavrosflight/time_interface.h>
+#include <rosflight/mavrosflight/timer_interface.h>
 
-#include <ros/ros.h>
-
-#include <cstdlib>
-#include <stdint.h>
+#include <chrono>
+#include <memory>
 
 namespace mavrosflight
 {
-
+template <typename DerivedLogger>
 class TimeManager : MavlinkListenerInterface
 {
 public:
-  TimeManager(MavlinkComm *comm);
+  TimeManager(MavlinkComm *comm,
+              LoggerInterface<DerivedLogger> &logger,
+              const TimeInterface &time_interface,
+              TimerProviderInterface &timer_provider);
 
   virtual void handle_mavlink_message(const mavlink_message_t &msg);
 
-  ros::Time get_ros_time_ms(uint32_t boot_ms);
-  ros::Time get_ros_time_us(uint64_t boot_us);
+  std::chrono::nanoseconds fcu_time_to_system_time(std::chrono::nanoseconds fcu_time);
 
 private:
   MavlinkComm *comm_;
 
-  ros::Timer time_sync_timer_;
-  void timer_callback(const ros::TimerEvent &event);
+  std::shared_ptr<TimerInterface> time_sync_timer_;
+  void timer_callback();
 
   double offset_alpha_;
-  int64_t offset_ns_;
-  ros::Duration offset_;
+  std::chrono::nanoseconds offset_ns_;
 
   bool initialized_;
+
+  LoggerInterface<DerivedLogger> &logger_;
+  const TimeInterface &time_interface_;
+  TimerProviderInterface &timer_provider_;
 };
 
 } // namespace mavrosflight

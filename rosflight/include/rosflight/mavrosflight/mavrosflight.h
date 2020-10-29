@@ -37,6 +37,7 @@
 #ifndef MAVROSFLIGHT_MAVROSFLIGHT_H
 #define MAVROSFLIGHT_MAVROSFLIGHT_H
 
+#include <rosflight/mavrosflight/logger_interface.h>
 #include <rosflight/mavrosflight/mavlink_bridge.h>
 #include <rosflight/mavrosflight/mavlink_comm.h>
 #include <rosflight/mavrosflight/param_manager.h>
@@ -47,22 +48,26 @@
 
 #include <boost/function.hpp>
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 
 namespace mavrosflight
 {
-
+template <typename DerivedLogger>
 class MavROSflight
 {
 public:
-
   /**
    * \brief Instantiates the class and begins communication on the specified serial port
    * \param mavlink_comm Reference to a MavlinkComm object (serial or UDP)
    * \param baud_rate Serial communication baud rate
    */
-  MavROSflight(MavlinkComm& mavlink_comm, uint8_t sysid = 1, uint8_t compid = 50);
+  MavROSflight(MavlinkComm& mavlink_comm,
+               LoggerInterface<DerivedLogger>& logger,
+               const TimeInterface& time_interface,
+               TimerProviderInterface& timer_provider,
+               uint8_t sysid = 1,
+               uint8_t compid = 50);
 
   /**
    * \brief Stops communication and closes the serial port before the object is destroyed
@@ -71,11 +76,10 @@ public:
 
   // public member objects
   MavlinkComm& comm;
-  ParamManager param;
-  TimeManager time;
+  ParamManager<DerivedLogger> param;
+  TimeManager<DerivedLogger> time;
 
 private:
-
   // member variables
   uint8_t sysid_;
   uint8_t compid_;
